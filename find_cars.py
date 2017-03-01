@@ -5,6 +5,32 @@ import pickle
 import cv2
 from lesson_functions import bin_spatial, color_hist, get_hog_features
 
+# Classifier data
+svc_data = None
+
+
+#
+# Loads and initialize HOG+SVM classifier data from pickle file.
+# Returns classifier data.
+#
+def load_classifier(pickle_file="HOGClassifier.p"):
+    global svc_data
+    dist_pickle = pickle.load( open(pickle_file, "rb" ) )
+    svc_data = {}
+    svc_data['svc'] = dist_pickle['svc']
+    svc_data['X_scaler'] = dist_pickle['scaler']
+
+    svc_data['color_space']    = dist_pickle['color_space']
+    svc_data['spatial_size']   = dist_pickle['spatial_size']
+    svc_data['hist_bins']      = dist_pickle['hist_bins']
+    svc_data['orient']         = dist_pickle['orient']
+    svc_data['pix_per_cell']   = dist_pickle['pix_per_cell']
+    svc_data['cell_per_block'] = dist_pickle['cell_per_block']
+    svc_data['hog_channel']    = dist_pickle['hog_channel']
+    svc_data['spatial_feat']   = dist_pickle['spatial_feat']
+    svc_data['hist_feat']      = dist_pickle['hist_feat']
+    svc_data['hog_feat']       = dist_pickle['hog_feat']
+    return svc_data
 
 
 def convert_rgb_color(img, conv='YCrCb'):
@@ -22,7 +48,15 @@ def convert_rgb_color(img, conv='YCrCb'):
         return cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
 
 
-# Define a single function that can extract features using hog sub-sampling and make predictions
+#
+# Define a single function that can extract features using hog sub-sampling and make predictions.
+# The region: (0, ystart) to (image_width, ystop). 
+# Params: img - source float32 RGB image with normed channels in range [0..1].
+#         ystart - top Y of region
+#         ystop - bottom Y of region
+#         scale - scale of searching window.
+# Returns: list of rectangles [(X1,Y1), (X2,Y2)].
+#
 def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
     
     color_space    = params['color_space']
@@ -41,8 +75,6 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
     assert(spatial_feat == True)
     assert(hist_feat == True)
     assert(hog_feat == True)
-
-    img = img.astype(np.float32)/255
     
     img_tosearch = img[ystart:ystop,:,:]
     ctrans_tosearch = convert_rgb_color(img_tosearch, conv=color_space)
@@ -104,3 +136,29 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
                 bboxes.append(box)
                 
     return bboxes
+    
+
+# Function detects vehicles in frame RGB image.
+# Params: img - uint8 RGB image.
+# Returns: list of windows [(x1,y1), (X2,Y2)] around detected vehicles.
+def detect_vehicles(img, verbose=False):
+    global svc_data
+    
+    ystart = 400
+    ystop = 656
+#    scale = 1.5
+#    scale = 2
+    scale = 1.2
+
+    svc = svc_data['svc']
+    X_scaler = svc_data['X_scaler']
+
+    if verbose:
+        print(svc_data)
+
+    img = img.astype(np.float32)/255
+
+    bboxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
+    
+    return bboxes
+    
