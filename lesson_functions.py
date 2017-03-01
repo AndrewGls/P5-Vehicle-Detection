@@ -2,13 +2,6 @@ import numpy as np
 import cv2
 from skimage.feature import hog
 
-def convert_color(img, conv='RGB2YCrCb'):
-    if conv == 'RGB2YCrCb':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
-    if conv == 'BGR2YCrCb':
-        return cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
-    if conv == 'RGB2LUV':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
 
 def get_hog_features(img, orient, pix_per_cell, cell_per_block, 
                         vis=False, feature_vec=True):
@@ -94,3 +87,15 @@ def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
 
     #9) Return concatenated array of features
     return np.concatenate(img_features)
+
+# Define a function to draw bounding boxes
+# bboxes is list of [(x1, y1), (x2, y2)]
+def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
+    # Make a copy of the image
+    imcopy = np.copy(img)
+    # Iterate through the bounding boxes
+    for bbox in bboxes:
+        # Draw a rectangle given bbox coordinates
+        cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+    # Return the image copy with boxes drawn
+    return imcopy
