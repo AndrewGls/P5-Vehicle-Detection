@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import cv2
+from scipy.ndimage.measurements import label
 from lesson_functions import bin_spatial, color_hist, get_hog_features
 
 # Classifier data
@@ -48,6 +49,54 @@ def convert_rgb_color(img, conv='YCrCb'):
         return cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
 
 
+
+
+# Returns heatmap for list of bounding boxes.
+def heatmap_from_detections(img, bbox_list):
+    h,w,_ = img.shape
+    heatmap = np.zeros((h,w)).astype(np.float32)
+    
+    # Iterate through list of bboxes
+    for box in bbox_list:
+        # Add += 1 for all pixels inside each bbox
+        # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+        x1,y1 = box[0]
+        x2,y2 = box[1]
+        heatmap[y1:y2, x1:x2] += 1
+
+     # Return updated heatmap
+    return heatmap# Iterate through list of bboxes
+       
+#
+# Applies threshold to heatmap.
+# Params: heatmap - float32 image with one chanel.
+#         threshold - all pixels <= threshold set to zero.
+# Returns uint8 gray image
+#
+def apply_threshold(heatmap, threshold):
+    # Zero out pixels below the threshold
+    heatmap[heatmap <= threshold] = 0
+    heatmap = np.clip(heatmap, 0, 255)
+    # Return thresholded map
+    return heatmap
+    
+
+def draw_labeled_bboxes(img, labels, color=(0, 0, 255), thick=6):
+    # Iterate through all detected cars
+    for car_number in range(1, labels[1]+1):
+        # Find pixels with each car_number label value
+        nonzero = (labels[0] == car_number).nonzero()
+        # Identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        # Define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+        # Draw the box on the image
+        cv2.rectangle(img, bbox[0], bbox[1], color, thick)
+    # Return the image
+    return img
+    
+    
 #
 # Define a single function that can extract features using hog sub-sampling and make predictions.
 # The region: (0, ystart) to (image_width, ystop). 
@@ -138,10 +187,12 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
     return bboxes
     
 
+#
 # Function detects vehicles in frame RGB image.
 # Params: img - uint8 RGB image.
-# Returns: list of windows [(x1,y1), (X2,Y2)] around detected vehicles.
-def detect_vehicles(img, verbose=False):
+# Returns: list of bounding boxes [(x1,y1), (X2,Y2)] where classifier reported positive detections.
+#
+def find_cars_multiscale(img, verbose=False):
     global svc_data
     
     ystart = 400
@@ -174,6 +225,6 @@ def detect_vehicles(img, verbose=False):
 #    boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
 #    if len(boxes):
 #        bboxes.extend(boxes)
-    
+
     return bboxes
     
