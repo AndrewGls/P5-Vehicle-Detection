@@ -5,6 +5,7 @@ import pickle
 import cv2
 from scipy.ndimage.measurements import label
 from lesson_functions import bin_spatial, color_hist, get_hog_features
+from collections import deque
 
 # Classifier data
 svc_data = None
@@ -74,6 +75,8 @@ def heatmap_from_detections(img, bbox_list):
 # Returns uint8 gray image
 #
 def apply_threshold(heatmap, threshold):
+    # create a copy to exclude modification of input heatmap
+    heatmap = np.copy(heatmap)
     # Zero out pixels below the threshold
     heatmap[heatmap <= threshold] = 0
     heatmap = np.clip(heatmap, 0, 255)
@@ -96,6 +99,27 @@ def draw_labeled_bboxes(img, labels, color=(0, 0, 255), thick=6):
     # Return the image
     return img
     
+
+#
+# Returns list of bounding boxes for detected labes (cars) where every
+# bounding box [(X1,Y1), (X2,Y2)].
+#
+def get_labeled_bboxes(labels):
+    bboxes = []
+    # Iterate through all detected cars
+    for car_number in range(1, labels[1]+1):
+        # Find pixels with each car_number label value
+        nonzero = (labels[0] == car_number).nonzero()
+        # Identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        # Define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))        
+        bboxes.append(bbox)
+    # Return list of bounding boxes
+    return bboxes
+
+    
     
 #
 # Define a single function that can extract features using hog sub-sampling and make predictions.
@@ -104,7 +128,7 @@ def draw_labeled_bboxes(img, labels, color=(0, 0, 255), thick=6):
 #         ystart - top Y of region
 #         ystop - bottom Y of region
 #         scale - scale of searching window.
-# Returns: list of rectangles [(X1,Y1), (X2,Y2)].
+# Returns: list of bouding boxes [(X1,Y1), (X2,Y2)].
 #
 def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
     
@@ -227,4 +251,60 @@ def find_cars_multiscale(img, verbose=False):
 #        bboxes.extend(boxes)
 
     return bboxes
+    
+
+# The class receives the paramenets of bounding box detection and averages box detection.
+class BoundingBoxes:
+    def __init__(self, nf = 5):
+        # defines the length of queue used to buffer data from 'nf' frames
+        self.nf = nf
+        # hot windows of the last n frames
+        self.recent_boxes = deque([], maxlen=nf)
+        # hot windows of current frame
+        self.currect_boxes = None
+        # all hot windows for last n frames
+        self.all_boxes = []
+    
+    def update_all_boxes_(self):
+        all_boxes = []
+        for boxes in self.recent_boxes:
+            all_boxes += boxes
+        if len(all_boxes) == 0:
+            self.all_boxes = []
+        else:
+            self.all_boxes = all_boxes
+    
+    def add(self, boxes):
+        self.currect_boxes = boxes
+        self.recent_boxes.appendleft(boxes)
+        self.update_all_boxes_()
+ 
+
+
+#
+# Detects vehicles in the frame.
+# Params: image - uint8 RGB image.
+#         frame_idx - frame index.
+#         verbose - on/off debug info.
+# Returns: bounding boxed with detected vehicles.
+#          In verbose mode returns additional params: hot_windows, heatmap, label
+#
+def detect_vehicles(image, frame_idx, avgBoxes=None, thresh=1, verbose=False):
+        
+    hot_windows = find_cars_multiscale(image)
+    
+    if avgBoxes:
+        avgBoxes.add(hot_windows)
+        hot_windows = avgBoxes.all_boxes
+    
+    heatmap = heatmap_from_detections(image, hot_windows)
+    heatmap_thresh = apply_threshold(heatmap, thresh)
+    
+    labels = label(heatmap_thresh)
+    bboxes = get_labeled_bboxes(labels)
+    
+    if verbose == False:
+        return bboxes
+        
+    return bboxes, hot_windows, heatmap, labels
     
