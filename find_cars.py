@@ -146,9 +146,9 @@ def detect_vehicles(img, verbose=False):
     
     ystart = 400
     ystop = 656
-#    scale = 1.5
+    scale = 1.5
 #    scale = 2
-    scale = 1.2
+#    scale = 1.2
 
     svc = svc_data['svc']
     X_scaler = svc_data['X_scaler']
@@ -158,7 +158,22 @@ def detect_vehicles(img, verbose=False):
 
     img = img.astype(np.float32)/255
 
-    bboxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
+    bboxes = []
+
+#    scale = 1.2
+#    boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
+#    if len(boxes):
+#        bboxes.extend(boxes)
+
+    scale = 1.5
+    boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
+    if len(boxes):
+        bboxes.extend(boxes)
+
+#    scale = 2
+#    boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
+#    if len(boxes):
+#        bboxes.extend(boxes)
     
     return bboxes
     
