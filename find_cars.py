@@ -209,8 +209,82 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
                 bboxes.append(box)
                 
     return bboxes
-    
 
+
+    
+#
+# Generates grid used for car detection for visualizarion.
+# The region: (0, ystart) to (image_width, ystop). 
+# Params: img - source float32 RGB image with normed channels in range [0..1].
+#         ystart - top Y of region
+#         ystop - bottom Y of region
+#         scale - scale of searching window.
+#         cells_per_step - instead of overlap, define how many cells to step
+# Returns: image.
+#
+def find_cars_grid(img, ystart, ystop, scale, cells_per_step=8):
+    
+    pix_per_cell   = 8
+    cell_per_block = 2
+    
+    #shape = np.int(img.shape / scale)
+    
+    roi_width = img.shape[1]
+    roi_height = ystop - ystart;
+    
+#    img_tosearch = img[ystart:ystop,:,:]
+#    ctrans_tosearch = convert_rgb_color(img_tosearch, conv=color_space)
+    if scale != 1:
+#        imshape = ctrans_tosearch.shape
+#        ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1]/scale), np.int(imshape[0]/scale)))       
+        roi_width = np.int(roi_width / scale)
+        roi_height = np.int(roi_height / scale)
+        
+#    ch1 = ctrans_tosearch[:,:,0]
+#    ch2 = ctrans_tosearch[:,:,1]
+#    ch3 = ctrans_tosearch[:,:,2]
+
+    # Define blocks and steps as above
+#    nxblocks = (ch1.shape[1] // pix_per_cell)-1
+#    nyblocks = (ch1.shape[0] // pix_per_cell)-1 
+    nxblocks = (roi_width // pix_per_cell)-1
+    nyblocks = (roi_height // pix_per_cell)-1 
+    # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
+    window = 64
+    nblocks_per_window = (window // pix_per_cell)-1 
+    nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
+    nysteps = (nyblocks - nblocks_per_window) // cells_per_step
+        
+    bboxes = []
+    for xb in range(nxsteps+1):
+        for yb in range(nysteps+1):
+            ypos = yb*cells_per_step
+            xpos = xb*cells_per_step
+
+            xleft = xpos*pix_per_cell
+            ytop = ypos*pix_per_cell
+            
+            xbox_left = np.int(xleft*scale)
+            ytop_draw = np.int(ytop*scale)
+            win_draw = np.int(window*scale)
+            box = [(xbox_left, ytop_draw+ystart), (xbox_left+win_draw,ytop_draw+win_draw+ystart)]
+            bboxes.append(box)
+    
+    return bboxes
+
+def find_cars_grid_64(img, ystart=400, ystop=656-64*3, scale=1, cells_per_step=8):
+    return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
+
+def find_cars_grid_96(img, ystart=400, ystop=656, scale=1.5, cells_per_step=8):
+    return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
+    
+def find_cars_grid_128(img, ystart=400, ystop=656, scale=2, cells_per_step=8):
+    return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
+
+def find_cars_grid_160(img, ystart=400, ystop=656, scale=2.5, cells_per_step=8):
+    return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
+
+    
 #
 # Function detects vehicles in frame RGB image.
 # Params: img - uint8 RGB image.

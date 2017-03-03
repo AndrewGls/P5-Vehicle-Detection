@@ -1,4 +1,5 @@
 /vehicles
 /non-vehicles
+/temp_data
 /.ipynb_checkpoints
 HOGClassifierData.p
