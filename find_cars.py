@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import cv2
 from scipy.ndimage.measurements import label
-from lesson_functions import bin_spatial, color_hist, get_hog_features
+from lesson_functions import bin_spatial, color_hist, get_hog_features, draw_boxes
 from collections import deque
 
 # Classifier data
@@ -176,8 +176,8 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
     
     bboxes = []
-    for xb in range(nxsteps):
-        for yb in range(nysteps):
+    for xb in range(nxsteps+1):
+        for yb in range(nysteps+1):
             ypos = yb*cells_per_step
             xpos = xb*cells_per_step
             # Extract HOG for this patch
@@ -272,15 +272,31 @@ def find_cars_grid(img, ystart, ystop, scale, cells_per_step=8):
     
     return bboxes
 
-def find_cars_grid_64(img, ystart=400, ystop=656-64*3, scale=1, cells_per_step=8):
+
+ystart_1 = 400-2*8
+ystop_1 = 400+1*64+2*8
+scale_1 = 1
+
+def find_cars_grid_1(img, ystart=ystart_1, ystop=ystop_1, scale=scale_1, cells_per_step=8):
     return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
 
-def find_cars_grid_96(img, ystart=400, ystop=656, scale=1.5, cells_per_step=8):
+
+ystart_2 = 400-2*8
+ystop_2 = 400+2*64+2*8
+scale_2 = 1.5
+
+def find_cars_grid_2(img, ystart=ystart_2, ystop=ystop_2, scale=scale_2, cells_per_step=8):
     return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
+
+
+ystart_3 = 400-2*8
+ystop_3 = 656
+scale_3 = 2
     
-def find_cars_grid_128(img, ystart=400, ystop=656, scale=2, cells_per_step=8):
+def find_cars_grid_3(img, ystart=ystart_3, ystop=ystop_3, scale=scale_3, cells_per_step=8):
     return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
 
+    
 def find_cars_grid_160(img, ystart=400, ystop=656, scale=2.5, cells_per_step=8):
     return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
 
@@ -290,14 +306,20 @@ def find_cars_grid_160(img, ystart=400, ystop=656, scale=2.5, cells_per_step=8):
 # Params: img - uint8 RGB image.
 # Returns: list of bounding boxes [(x1,y1), (X2,Y2)] where classifier reported positive detections.
 #
-def find_cars_multiscale(img, verbose=False):
+def find_cars_multiscale(img, scales=[0,1,2,3], verbose=False):
     global svc_data
     
-    ystart = 400
-    ystop = 656
-    scale = 1.5
+    global ystart_1, ystart_2, ystart_3
+    global ystop_1, ystop_2, ystop_3
+    global scale_1, scale_2, scale_3
+    
+#    ystart = 400
+#    ystop = 656
+#    scale = 1.5
 #    scale = 2
 #    scale = 1.2
+
+    assert(np.max(img) <= 1)
 
     svc = svc_data['svc']
     X_scaler = svc_data['X_scaler']
@@ -305,20 +327,26 @@ def find_cars_multiscale(img, verbose=False):
     if verbose:
         print(svc_data)
 
-    img = img.astype(np.float32)/255
-
     bboxes = []
+    
+    # Scale 1
+    if 1 in scales:
+        boxes = find_cars(img, ystart_1, ystop_1, scale_1, svc, X_scaler, svc_data)
+        if len(boxes):
+            bboxes.extend(boxes)
 
-#    scale = 1.2
-#    boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
-#    if len(boxes):
-#        bboxes.extend(boxes)
+    # Scale 2
+    if 2 in scales:
+        boxes = find_cars(img, ystart_2, ystop_2, scale_2, svc, X_scaler, svc_data)
+        if len(boxes):
+            bboxes.extend(boxes)
 
-    scale = 1.5
-    boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
-    if len(boxes):
-        bboxes.extend(boxes)
-
+    # Scale 3
+    if 3 in scales:
+        boxes = find_cars(img, ystart_3, ystop_3, scale_3, svc, X_scaler, svc_data)
+        if len(boxes):
+            bboxes.extend(boxes)
+            
 #    scale = 2
 #    boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, svc_data)
 #    if len(boxes):
@@ -363,22 +391,57 @@ class BoundingBoxes:
 # Returns: bounding boxed with detected vehicles.
 #          In verbose mode returns additional params: hot_windows, heatmap, label
 #
-def detect_vehicles(image, frame_idx, avgBoxes=None, thresh=1, verbose=False):
-        
-    hot_windows = find_cars_multiscale(image)
+def detect_vehicles(image, frame_idx, scales=[0,1,2,3], avgBoxes=None, thresh=1, useHeatmap=True, verbose=False):
+    
+    hot_windows = find_cars_multiscale(image, scales=scales)
     
     if avgBoxes:
         avgBoxes.add(hot_windows)
         hot_windows = avgBoxes.all_boxes
     
-    heatmap = heatmap_from_detections(image, hot_windows)
-    heatmap_thresh = apply_threshold(heatmap, thresh)
-    
-    labels = label(heatmap_thresh)
-    bboxes = get_labeled_bboxes(labels)
+    heatmap=[]
+    labels=[]
+        
+    if useHeatmap:
+        heatmap = heatmap_from_detections(image, hot_windows)
+        heatmap_thresh = apply_threshold(heatmap, thresh)
+        
+        labels = label(heatmap_thresh)
+        bboxes = get_labeled_bboxes(labels)
+    else:
+        bboxes = hot_windows
     
     if verbose == False:
         return bboxes
         
     return bboxes, hot_windows, heatmap, labels
     
+    
+
+def draw_cars_grids(img, scales=[0,1,2,3,4], cell_blocks=True, color=(0, 0, 255), thick=6):
+
+    if 1 in scales:
+        bboxes = find_cars_grid_1(img)
+        img = draw_boxes(img, bboxes, color=color, thick=thick)
+        
+        if cell_blocks:
+            bboxes = find_cars_grid_1(img, cells_per_step=2)
+            img = draw_boxes(img, bboxes, color=(255, 0, 0), thick=2)
+    
+    if 2 in scales:
+        bboxes = find_cars_grid_2(img)
+        img = draw_boxes(img, bboxes, color=color, thick=thick)
+        
+        if cell_blocks:
+            bboxes = find_cars_grid_2(img, cells_per_step=2)
+            img = draw_boxes(img, bboxes, color=(255, 0, 0), thick=2)
+
+    if 3 in scales:
+        bboxes = find_cars_grid_3(img)
+        img = draw_boxes(img, bboxes, color=color, thick=thick)
+        
+        if cell_blocks:
+            bboxes = find_cars_grid_3(img, cells_per_step=2)
+            img = draw_boxes(img, bboxes, color=(255, 0, 0), thick=2)
+            
+    return img

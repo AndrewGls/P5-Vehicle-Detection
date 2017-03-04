@@ -27,9 +27,9 @@ def load_data_sets():
     
 
 # Saves cars and notcars lists into pickle file.
-def save_data_sets(data_file='data.p', cars, notcars):    
+def save_data_sets(pickle_file, cars, notcars):    
     try:
-        with open(data_file, 'wb') as pfile:
+        with open(pickle_file, 'wb') as pfile:
             pickle.dump(
                 {
                     'cars': cars,
@@ -144,13 +144,24 @@ if __name__ == '__main__':
     
     params = {}
     
+#    params['color_space'] = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+#    params['orient'] = 9  # HOG orientations
+#    params['pix_per_cell'] = 8 # HOG pixels per cell
+#    params['cell_per_block'] = 2 # HOG cells per block
+#    params['hog_channel'] = 'ALL' # Can be 0, 1, 2, or "ALL"
+#    params['spatial_size'] = (32, 32) # Spatial binning dimensions
+#    params['hist_bins'] = 32    # Number of histogram bins
+#    params['spatial_feat'] = True # Spatial features on or off
+#    params['hist_feat'] = True # Histogram features on or off
+#    params['hog_feat'] = True # HOG features on or off
+
     params['color_space'] = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
     params['orient'] = 9  # HOG orientations
     params['pix_per_cell'] = 8 # HOG pixels per cell
     params['cell_per_block'] = 2 # HOG cells per block
     params['hog_channel'] = 'ALL' # Can be 0, 1, 2, or "ALL"
-    params['spatial_size'] = (32, 32) # Spatial binning dimensions
-    params['hist_bins'] = 32    # Number of histogram bins
+    params['spatial_size'] = (16, 16) # Spatial binning dimensions
+    params['hist_bins'] = 16    # Number of histogram bins
     params['spatial_feat'] = True # Spatial features on or off
     params['hist_feat'] = True # Histogram features on or off
     params['hog_feat'] = True # HOG features on or off
