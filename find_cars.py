@@ -531,11 +531,11 @@ def process_image_hog_pipeline(image, frame_ind, useHeatmap=True, thresh=4, avgB
     image = image.astype(np.float32)/255
 
     if verbose == False:
-        bboxes = detect_vehicles(image, frame_ind, scales=[0,1,2,3], thresh=thresh, useHeatmap=True, avgBoxes=avgBoxes)
+        bboxes = detect_vehicles(image, frame_ind, scales=[0,1,2,3], thresh=thresh, useHeatmap=useHeatmap, avgBoxes=avgBoxes)
         result = draw_boxes(draw_image, bboxes, thick=2)
     else:
-        bboxes, hot_windows, heatmap, labels = detect_vehicles(image, frame_ind, scales=[0,1,2,3], thresh=4,
-                                                               useHeatmap=True, avgBoxes=avgBoxes, verbose=True)
+        bboxes, hot_windows, heatmap, labels = detect_vehicles(image, frame_ind, scales=[0,1,2,3], thresh=thresh,
+                                                               useHeatmap=useHeatmap, avgBoxes=avgBoxes, verbose=True)
         result = draw_boxes(draw_image, bboxes, thick=2)    
         result = draw_debug_board(result, frame_ind, bboxes, hot_windows, heatmap, labels[0])
         
@@ -555,7 +555,7 @@ def process_image_hog_pipeline(image, frame_ind, useHeatmap=True, thresh=4, avgB
     
     
         # add frame_index text at the bottom of board
-        xmax = 1100
+        xmax = 900
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(result, 'frame {:d}'.format(frame_ind), (xmax + 20, 50), font, 0.9, (255, 0, 0), 2, cv2.LINE_AA)
     
