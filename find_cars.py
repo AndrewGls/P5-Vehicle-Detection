@@ -128,9 +128,10 @@ def get_labeled_bboxes(labels):
 #         ystart - top Y of region
 #         ystop - bottom Y of region
 #         scale - scale of searching window.
+#         cells_per_step - instead of overlap, define how many cells to step.
 # Returns: list of bouding boxes [(X1,Y1), (X2,Y2)].
 #
-def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
+def find_cars(img, ystart, ystop, scale, svc, X_scaler, params, cells_per_step = 2):
     
     color_space    = params['color_space']
     spatial_size   = params['spatial_size']
@@ -166,7 +167,6 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
     # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
     window = 64
     nblocks_per_window = (window // pix_per_cell)-1 
-    cells_per_step = 2  # Instead of overlap, define how many cells to step
     nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
     nysteps = (nyblocks - nblocks_per_window) // cells_per_step
     
@@ -225,28 +225,15 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, params):
 def find_cars_grid(img, ystart, ystop, scale, cells_per_step=8):
     
     pix_per_cell   = 8
-    cell_per_block = 2
-    
-    #shape = np.int(img.shape / scale)
     
     roi_width = img.shape[1]
     roi_height = ystop - ystart;
     
-#    img_tosearch = img[ystart:ystop,:,:]
-#    ctrans_tosearch = convert_rgb_color(img_tosearch, conv=color_space)
     if scale != 1:
-#        imshape = ctrans_tosearch.shape
-#        ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1]/scale), np.int(imshape[0]/scale)))       
         roi_width = np.int(roi_width / scale)
         roi_height = np.int(roi_height / scale)
         
-#    ch1 = ctrans_tosearch[:,:,0]
-#    ch2 = ctrans_tosearch[:,:,1]
-#    ch3 = ctrans_tosearch[:,:,2]
-
     # Define blocks and steps as above
-#    nxblocks = (ch1.shape[1] // pix_per_cell)-1
-#    nyblocks = (ch1.shape[0] // pix_per_cell)-1 
     nxblocks = (roi_width // pix_per_cell)-1
     nyblocks = (roi_height // pix_per_cell)-1 
     # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
@@ -273,26 +260,38 @@ def find_cars_grid(img, ystart, ystop, scale, cells_per_step=8):
     return bboxes
 
 
+ystart_0 = 400-2*8
+ystop_0 = 400+1*64+2*8
+scale_0 = 0.8
+
+def find_cars_grid_0(img, ystart=ystart_0, ystop=ystop_0, scale=scale_0, cells_per_step=8):
+    return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
+
+    
 ystart_1 = 400-2*8
-ystop_1 = 400+1*64+2*8
-scale_1 = 1
+ystop_1 = 400+2*64+2*8
+scale_1 = 1.3
 
 def find_cars_grid_1(img, ystart=ystart_1, ystop=ystop_1, scale=scale_1, cells_per_step=8):
     return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
 
 
 ystart_2 = 400-2*8
-ystop_2 = 400+2*64+2*8
-scale_2 = 1.5
+#ystop_2 = 400+2*64+2*8
+ystop_2 = 656
+scale_2 = 1.8
 
 def find_cars_grid_2(img, ystart=ystart_2, ystop=ystop_2, scale=scale_2, cells_per_step=8):
     return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
 
 
-ystart_3 = 400-2*8
+#ystart_3 = 400-2*8
+#ystop_3 = 656
+#scale_3 = 2
+ystart_3 = 400-32
 ystop_3 = 656
-scale_3 = 2
-    
+scale_3 = 2.3
+
 def find_cars_grid_3(img, ystart=ystart_3, ystop=ystop_3, scale=scale_3, cells_per_step=8):
     return find_cars_grid(img, ystart, ystop, scale, cells_per_step)
 
@@ -329,6 +328,12 @@ def find_cars_multiscale(img, scales=[0,1,2,3], verbose=False):
 
     bboxes = []
     
+    # Scale 0
+    if 0 in scales:
+        boxes = find_cars(img, ystart_0, ystop_0, scale_0, svc, X_scaler, svc_data)
+        if len(boxes):
+            bboxes.extend(boxes)
+
     # Scale 1
     if 1 in scales:
         boxes = find_cars(img, ystart_1, ystop_1, scale_1, svc, X_scaler, svc_data)
@@ -418,30 +423,140 @@ def detect_vehicles(image, frame_idx, scales=[0,1,2,3], avgBoxes=None, thresh=1,
     
     
 
-def draw_cars_grids(img, scales=[0,1,2,3,4], cell_blocks=True, color=(0, 0, 255), thick=6):
+def draw_cars_grids(img, scales=[0,1,2,3], cell_blocks=True, color=(0, 0, 255), thick=4):
 
-    if 1 in scales:
-        bboxes = find_cars_grid_1(img)
-        img = draw_boxes(img, bboxes, color=color, thick=thick)
-        
-        if cell_blocks:
-            bboxes = find_cars_grid_1(img, cells_per_step=2)
-            img = draw_boxes(img, bboxes, color=(255, 0, 0), thick=2)
+    draw_img = np.copy(img)
     
-    if 2 in scales:
-        bboxes = find_cars_grid_2(img)
-        img = draw_boxes(img, bboxes, color=color, thick=thick)
-        
-        if cell_blocks:
-            bboxes = find_cars_grid_2(img, cells_per_step=2)
-            img = draw_boxes(img, bboxes, color=(255, 0, 0), thick=2)
-
     if 3 in scales:
-        bboxes = find_cars_grid_3(img)
-        img = draw_boxes(img, bboxes, color=color, thick=thick)
-        
         if cell_blocks:
             bboxes = find_cars_grid_3(img, cells_per_step=2)
-            img = draw_boxes(img, bboxes, color=(255, 0, 0), thick=2)
+            draw_img = draw_boxes(draw_img, bboxes, color=(255, 0, 0), thick=2)
+        bboxes = find_cars_grid_3(img)
+        draw_img = draw_boxes(draw_img, bboxes, color=color, thick=thick)
+        
+    if 2 in scales:
+        if cell_blocks:
+            bboxes = find_cars_grid_2(img, cells_per_step=2)
+            draw_img = draw_boxes(draw_img, bboxes, color=(255, 0, 0), thick=2)
+        bboxes = find_cars_grid_2(img)
+        draw_img = draw_boxes(draw_img, bboxes, color=color, thick=thick)        
+
+    if 1 in scales:
+        if cell_blocks:
+            bboxes = find_cars_grid_1(img, cells_per_step=2)
+            draw_img = draw_boxes(draw_img, bboxes, color=(255, 0, 0), thick=2)
+        bboxes = find_cars_grid_1(img)
+        draw_img = draw_boxes(draw_img, bboxes, color=color, thick=thick)
+                    
+    if 0 in scales:
+        if cell_blocks:
+            bboxes = find_cars_grid_0(img, cells_per_step=2)
+            draw_img = draw_boxes(draw_img, bboxes, color=(255, 0, 0), thick=2)    
+        bboxes = find_cars_grid_0(img)
+        draw_img = draw_boxes(draw_img, bboxes, color=color, thick=thick)       
             
-    return img
+    return draw_img
+
+    
+# Draw debug board with Binarization-View, Lane-Detesction-View
+def draw_debug_board(img, frame_ind, bboxes, hot_windows, heatmap, labels):
+    
+    # prepare RGB heatmap image from float32 heatmap channel
+    img_heatmap = (np.copy(heatmap) / np.max(heatmap) * 255.).astype(np.uint8);
+    img_heatmap = cv2.applyColorMap(img_heatmap, colormap=cv2.COLORMAP_HOT)
+    img_heatmap = cv2.cvtColor(img_heatmap, cv2.COLOR_BGR2RGB)
+
+    # prepare RGB labels image from float32 labels channel
+    img_labels = (np.copy(labels) / np.max(labels) * 255.).astype(np.uint8);
+    img_labels = cv2.applyColorMap(img_labels, colormap=cv2.COLORMAP_HOT)
+    img_labels = cv2.cvtColor(img_labels, cv2.COLOR_BGR2RGB)
+    
+    # draw hot_windows in the frame
+    img_hot_windows = np.copy(img)
+    img_hot_windows = draw_boxes(img_hot_windows, hot_windows, thick=2)
+    
+    ymax = 0
+    
+    board_x = 5
+    board_y = 5
+    board_ratio = (img.shape[0] - 3*board_x)//3 / img.shape[0] #0.25
+    board_h = int(img.shape[0] * board_ratio)
+    board_w = int(img.shape[1] * board_ratio)
+        
+    ymin = board_y
+    ymax = board_h + board_y
+    xmin = board_x
+    xmax = board_x + board_w
+
+    offset_x = board_x + board_w
+
+    # draw hot_windows in the frame
+    img_hot_windows = cv2.resize(img_hot_windows, dsize=(board_w, board_h), interpolation=cv2.INTER_LINEAR)
+    img[ymin:ymax, xmin:xmax, :] = img_hot_windows
+    
+    # draw heatmap in the frame
+    xmin += offset_x
+    xmax += offset_x
+    img_heatmap = cv2.resize(img_heatmap, dsize=(board_w, board_h), interpolation=cv2.INTER_LINEAR)
+    img[ymin:ymax, xmin:xmax, :] = img_heatmap
+    
+    # draw heatmap in the frame
+    xmin += offset_x
+    xmax += offset_x
+    img_labels = cv2.resize(img_labels, dsize=(board_w, board_h), interpolation=cv2.INTER_LINEAR)
+    img[ymin:ymax, xmin:xmax, :] = img_labels
+    
+    return img;
+    
+   
+#
+# Detects and lables vehicles in the frame.
+# Params: img - RGB24 frame.
+#         frame_ind - frame index.
+#         useHeatmap - use heatmap for vehicle detection.
+#         thresh - threshold for heatmap
+#         avgBoxes - averaging hot windows along several frames.
+# Returns: frame with detected vehicles
+#
+def process_image_hog_pipeline(image, frame_ind, useHeatmap=True, thresh=4, avgBoxes=None, verbose=False, verboseSaveHeatmaps=False):
+    
+    out_dir_model       ='./models/model/'
+    out_dir_heatmap     = out_dir_model + 'heatmap/'
+    out_dir_heatmap_val = out_dir_model + 'heatmap_val/'
+    out_dir_labels      = out_dir_model + 'labels/'
+    
+    frame_ind += 1
+        
+    draw_image = np.copy(image)
+    image = image.astype(np.float32)/255
+
+    if verbose == False:
+        bboxes = detect_vehicles(image, frame_ind, scales=[0,1,2,3], thresh=thresh, useHeatmap=True, avgBoxes=avgBoxes)
+        result = draw_boxes(draw_image, bboxes, thick=2)
+    else:
+        bboxes, hot_windows, heatmap, labels = detect_vehicles(image, frame_ind, scales=[0,1,2,3], thresh=4,
+                                                               useHeatmap=True, avgBoxes=avgBoxes, verbose=True)
+        result = draw_boxes(draw_image, bboxes, thick=2)    
+        result = draw_debug_board(result, frame_ind, bboxes, hot_windows, heatmap, labels[0])
+        
+        if verboseSaveHeatmaps:
+            # save heatmap as hit image
+            f_path = out_dir_heatmap + str(frame_ind) + '.png'
+            plt.imsave(f_path, heatmap, cmap='hot')
+            # save heatmap values
+            heatmap_val = (np.dstack((heatmap,heatmap,heatmap))).astype(np.uint8)
+            f_path = out_dir_heatmap_val + str(frame_ind) + '.png'
+            mpimg.imsave(f_path, heatmap_val)
+            # save labels
+            f_path = out_dir_labels + str(frame_ind) + '.png'
+            gray = (np.copy(labels[0])*255/np.max(labels[0])).astype(np.uint8)
+            gray = np.dstack((gray,gray,gray))
+            mpimg.imsave(f_path, gray)
+    
+    
+        # add frame_index text at the bottom of board
+        xmax = 1100
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(result, 'frame {:d}'.format(frame_ind), (xmax + 20, 50), font, 0.9, (255, 0, 0), 2, cv2.LINE_AA)
+    
+    return result
