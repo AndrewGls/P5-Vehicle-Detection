@@ -516,6 +516,7 @@ def draw_debug_board(img, frame_ind, bboxes, hot_windows, heatmap, labels):
 #         useHeatmap - use heatmap for vehicle detection.
 #         thresh - threshold for heatmap
 #         avgBoxes - averaging hot windows along several frames.
+#         verbose - show/hide top debug bar.
 # Returns: frame with detected vehicles
 #
 def process_image_hog_pipeline(image, frame_ind, useHeatmap=True, thresh=4, avgBoxes=None, verbose=False, verboseSaveHeatmaps=False):
