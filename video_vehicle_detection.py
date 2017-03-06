@@ -8,7 +8,7 @@ from moviepy.editor import VideoFileClip
 
 
 frame_ind = 0
-avgBoxes = BoundingBoxes(5)
+avgBoxes = BoundingBoxes(10)
 verbose = True
 
 
@@ -29,17 +29,15 @@ def process_image(image):
     frame_ind += 1
     
     # Set verbose to False to hide top debug bar.
-    result = process_image_hog_pipeline(image, frame_ind, thresh=15, avgBoxes=avgBoxes, verbose=verbose)      
+    result = process_image_hog_pipeline(image, frame_ind, thresh=29, avgBoxes=avgBoxes, verbose=verbose)      
     return result
     
 
 if __name__ == '__main__':
-    global frame_ind
     
     MeasureMode = False
     
     out_dir='./output_images/'
-    frame_ind = 0;
     pickle_file = "HOGClassifier.p"
         
     load_classifier(pickle_file)
