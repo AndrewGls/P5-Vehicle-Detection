@@ -9,7 +9,7 @@ from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from skimage.feature import hog
 from sklearn.model_selection import train_test_split
-from lesson_functions import single_img_features
+from hog_util_functions import single_img_features
 from sklearn.utils import shuffle
 
 

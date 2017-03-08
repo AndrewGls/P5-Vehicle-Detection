@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import cv2
 from scipy.ndimage.measurements import label
-from lesson_functions import bin_spatial, color_hist, get_hog_features, draw_boxes
+from hog_util_functions import convert_rgb_color, bin_spatial, color_hist, get_hog_features, draw_boxes
 from collections import deque
 
 # Classifier data
@@ -33,23 +33,6 @@ def load_classifier(pickle_file="HOGClassifier.p"):
     svc_data['hist_feat']      = dist_pickle['hist_feat']
     svc_data['hog_feat']       = dist_pickle['hog_feat']
     return svc_data
-
-
-def convert_rgb_color(img, conv='YCrCb'):
-    if conv == 'RGB':
-        return np.copy(img)
-    if conv == 'YCrCb':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
-    if conv == 'HSV':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-    if conv == 'HLS':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
-    if conv == 'LUV':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
-    if conv == 'YUV':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
-
-
 
 
 # Returns heatmap for list of bounding boxes.
