@@ -140,31 +140,21 @@ if __name__ == '__main__':
     print('Number of samples in notcars set: ', len(notcars))
     
     
-    # Extracts features from image files
-    
+    # Parameters used during feature extraction
     params = {}
-    
-#    params['color_space'] = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-#    params['orient'] = 9  # HOG orientations
-#    params['pix_per_cell'] = 8 # HOG pixels per cell
-#    params['cell_per_block'] = 2 # HOG cells per block
-#    params['hog_channel'] = 'ALL' # Can be 0, 1, 2, or "ALL"
-#    params['spatial_size'] = (32, 32) # Spatial binning dimensions
-#    params['hist_bins'] = 32    # Number of histogram bins
-#    params['spatial_feat'] = True # Spatial features on or off
-#    params['hist_feat'] = True # Histogram features on or off
-#    params['hog_feat'] = True # HOG features on or off
-
-    params['color_space'] = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-    params['orient'] = 9  # HOG orientations
-    params['pix_per_cell'] = 8 # HOG pixels per cell
-    params['cell_per_block'] = 2 # HOG cells per block
-    params['hog_channel'] = 'ALL' # Can be 0, 1, 2, or "ALL"
+    params['color_space'] = 'YCrCb'   # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    params['orient'] = 9              # HOG orientations
+    params['pix_per_cell'] = 8        # HOG pixels per cell
+    params['cell_per_block'] = 2      # HOG cells per block
+    params['hog_channel'] = 'ALL'     # Can be 0, 1, 2, or "ALL"
     params['spatial_size'] = (16, 16) # Spatial binning dimensions
-    params['hist_bins'] = 16    # Number of histogram bins
-    params['spatial_feat'] = True # Spatial features on or off
-    params['hist_feat'] = True # Histogram features on or off
-    params['hog_feat'] = True # HOG features on or off
+    params['hist_bins'] = 16          # Number of histogram bins
+    params['spatial_feat'] = True     # Spatial features on or off
+    params['hist_feat'] = True        # Histogram features on or off
+    params['hog_feat'] = True         # HOG features on or off
+
+
+    # Extracts features from image files
     
     t1=time.time()
     
