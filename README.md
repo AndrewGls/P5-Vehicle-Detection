@@ -157,6 +157,8 @@ The result of HOG+SVM approach depends on the large set of parameters used as fo
 
 As a next step to get more robust vehicle detection pipeline, I'm going to use Deep Learning approach: SSD, YOLO and SqueezeDet. 
 
+[![ScreenShot](./images/YouTube-Vehicle_Detection_HOG+SVM.jpg)](https://youtu.be/Q8Uwxd3t3vo)
+
 ### Acknowledgments
 
 
